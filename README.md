@@ -1,4 +1,4 @@
 rk-tools
 ========
 
-RockChip tools for RK29xx and RK30xx generations
+RockChip tools modified to work with both RK29 and RK30 boards.
