@@ -76,7 +76,7 @@ void append_md5sum(FILE *fp)
 	}
 }
 
-int pack_rom(const char *loader_filename, const char *image_filename, const char *outfile)
+int pack_rom(const char *loader_filename, int majver, int minver, int subver, const char *image_filename, const char *outfile)
 {
 	time_t nowtime;
 	struct tm local_time;
@@ -92,6 +92,7 @@ int pack_rom(const char *loader_filename, const char *image_filename, const char
 	struct bootloader_header loader_header;
 
 	rom_header.chip = chiptype;
+	rom_header.version = (((majver) << 24) + ((minver) << 16) + (subver));
 	rom_header.code = 0x01030000;
 	nowtime = time(NULL);
 	localtime_r(&nowtime, &local_time);
@@ -114,7 +115,7 @@ int pack_rom(const char *loader_filename, const char *image_filename, const char
 	if (1 != fwrite(buffer, 0x66, 1, fp))
 		goto pack_fail;
 
-/*
+
 	printf("rom version: %x.%x.%x\n",
 		(rom_header.version >> 24) & 0xFF,
 		(rom_header.version >> 16) & 0xFF,
@@ -125,7 +126,7 @@ int pack_rom(const char *loader_filename, const char *image_filename, const char
 		rom_header.hour, rom_header.minute, rom_header.second);
 
 	printf("chip: %x\n", rom_header.chip);
-*/
+
 	fseek(fp, rom_header.loader_offset, SEEK_SET);
 	fprintf(stderr, "generate image...\n");
 	rom_header.loader_length = import_data(loader_filename, &loader_header, sizeof(loader_header), fp);
@@ -144,7 +145,6 @@ int pack_rom(const char *loader_filename, const char *image_filename, const char
 		goto pack_fail;
 	}
 	
-	rom_header.version = rkaf_header.version;
 	rom_header.unknown2 = 1;
 	
 	rom_header.system_fstype = 0;
@@ -176,15 +176,41 @@ pack_fail:
 	return -1;
 }
 
+void usage(const char *appname) {
+	const char *p = strrchr(appname, '/');
+	p = p ? p + 1 : appname;
+
+	printf("USAGE:\n"
+			"\t%s [-rk30|-rk29] [loader] [major version] [minor version] [subversion] [old image] [out image]\n"
+			"Example:\n"
+			"\t%s -rk30 Loader.bin 1 0 23 rawimage.img rkimage.img \tRK30 board\n"
+			"\t%s -rk29 Loader.bin 5 2 1 rawimage.img rkimage.img  \tRK29 board\n", p, p, p);
+}
+
 int main(int argc, char **argv)
 {
-	if (argc == 4)
+	// loader, majorver, minorver, subver, oldimage, newimage
+	if (argc == 8)
 	{
-		pack_rom(argv[1], argv[2], argv[3]);
+		if (strcmp(argv[1], "-rk30") == 0)
+		{
+			chiptype = 0x60;
+		}
+		else if (strcmp(argv[1], "-rk29") == 0)
+		{
+			chiptype = 0x50;
+		}
+		else
+		{
+			usage(argv[0]);
+			return 0;
+		}
+		// loader, majorver, minorver, subver, oldimage, newimage
+		pack_rom(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 	}
 	else
 	{
-		fprintf(stderr, "usage: %s <loader> <old image> <out image>\n", argv[0]);
+		usage(argv[0]);
 	}
 
 	return 0;
