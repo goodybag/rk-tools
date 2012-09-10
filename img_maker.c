@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 			return 0;
 		}
 		// loader, majorver, minorver, subver, oldimage, newimage
-		pack_rom(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
+		pack_rom(argv[2], argv[3], argv[4], argv[5], argv[6], argv[7]);
 	}
 	else
 	{
